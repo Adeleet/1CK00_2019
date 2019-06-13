@@ -1,0 +1,7 @@
+*.pdf
+*.log
+*.png
+*.lp
+*.ini
+__pycache__
+data
