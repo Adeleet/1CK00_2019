@@ -4,4 +4,5 @@
 *.lp
 *.ini
 __pycache__
+*.pyc
 data
