@@ -32,11 +32,11 @@ for i in range(1, n):
     xvars[i, 0, n - 1] = m.addVar(obj=dist[i][0],
                                   vtype=GRB.BINARY,
                                   name='x[%d,%d,%d]' % (i, 0, n - 1))
-
-# xvars[x,y,z]
-#     x : source
-#     y : destination
-#     z : time step
+xvars
+# xvars[i,j,t]
+#     i : source
+#     j : destination
+#     t : time step
 
 # all remaining xvars
 # Since we always start at 0, consider other 29 depots i,j (30 - 1 = 29)
@@ -98,3 +98,5 @@ plot_tsp(location, tour, name='exact')
 r = m.relax()
 r.optimize()
 print("LPrelax: ", r.objVal)
+
+gap = 100 * (m.objVal - r.objVal) / m.objVal
