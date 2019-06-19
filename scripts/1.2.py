@@ -1,119 +1,147 @@
-import itertools
-import math
-import random
-import sys
-
+import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 from gurobipy import *
 
 from visualizer import plot, plot_tsp
 
-# tsp_30_distances = np.load("../data/tsp30_distances.npy")
-# tsp_30_locations = np.load("../data/tsp30_locations.npy")
-# distance_map = list(zip([i for i in range(30)], [i for i in range(30)]))
-# n = 30
+
+def parse_tsp_txt(n):
+    """
+    Parses txt file and returns [location, dist]
+
+    Parameters:
+        n (int): tsp problem size, allowed values are 5, 7, 30, 100
+
+    Returns:
+        (location, dist) :
+                location:   list of n (x, y) coordinate tuples
+                dist:       list of n * n distances, with dist[i][j]
+                            as the distance from node i t node j
+    """
+    if not n == 5 and not n == 7 and not n == 30 and not n == 100:
+        raise ValueError("Invalid n, allowed values are: 5, 7, 30, 100")
+    with open("../data/tsp{}.txt".format(n)) as file:
+        file_content = [l.strip() for l in file.readlines()]
+    length = len(file_content)
+
+    loc_index = (1, int(length / 2))
+    dist_index = (loc_index[1] + 1, length)
+
+    location = [eval(l) for l in file_content[loc_index[0]:loc_index[1]]]
+    dist = [eval(l) for l in file_content[dist_index[0]:dist_index[1]]]
+    return (location, dist)
 
 
-def subtourelim(model, where):
-    if where == GRB.Callback.MIPSOL:
-        # make a list of edges selected in the solution
-        vals = model.cbGetSolution(model._vars)
-        selected = tuplelist((i, j)
-                             for i, j in model._vars.keys() if vals[i, j] > 0.5)
-        # find the shortest cycle in the selected edge list
-        tour = subtour(selected)
-        if len(tour) < n:
-            # add subtour elimination constraint for every pair of cities in tour
-            model.cbLazy(quicksum(model._vars[i, j]
-                                  for i, j in itertools.combinations(tour, 2))
-                         <= len(tour) - 1)
+location, dist = parse_tsp_txt(n=7)
 
 
-# Given a tuplelist of edges, find the shortest subtour
-
-def subtour(edges):
-    unvisited = list(range(n))
-    cycle = range(n + 1)  # initial length has 1 more city
-    while unvisited:  # true if list is non-empty
-        thiscycle = []
-        neighbors = unvisited
-        while neighbors:
-            current = neighbors[0]
-            thiscycle.append(current)
-            unvisited.remove(current)
-            neighbors = [j for i, j in edges.select(
-                current, '*') if j in unvisited]
-        if len(cycle) > len(thiscycle):
-            cycle = thiscycle
-    return cycle
+# Number of cities n
+n = len(dist)
+print('Number of cities in TSP model: {}'.format(n))
 
 
-# Dictionary of Euclidean distance between each pair of points
-dist = {(i, j):
-        math.sqrt(
-            sum((tsp_30_distances[i][k] - tsp_30_distances[j][k])**2 for k in range(2)))
-        for i in range(30) for j in range(i)}
-
-
+# Initialize Model
 m = Model()
 
-# Create variables
-
-vars = m.addVars(dist.keys(), obj=dist, vtype=GRB.BINARY, name='x')
-for i, j in vars.keys():
-    vars[j, i] = vars[i, j]  # edge in opposite direction
-
-# You could use Python looping constructs and m.addVar() to create
-# these decision variables instead.  The following would be equivalent
-# to the preceding m.addVars() call...
-#
-# vars = tupledict()
-# for i,j in dist.keys():
-#   vars[i,j] = m.addVar(obj=dist[i,j], vtype=GRB.BINARY,
-#                        name='e[%d,%d]'%(i,j))
+# Define x variables: xvars[i,j] := arc selected that travels from i to j
+xvars = tupledict()
+for i in range(n):
+    for j in range(n):
+        if not i == j:
+            xvars[i, j] = m.addVar(obj=dist[i][j],
+                                   vtype=GRB.BINARY,
+                                   name='x[%d,%d]' % (i, j))
 
 
-# Add degree-2 constraint
+# Define u variables: uvars[i] := position of node i in tour
+uvars = [m.addVar(lb=1, ub=n, vtype=GRB.INTEGER, name='u[%d]' % i)
+         for i in range(n)]
 
-m.addConstrs(vars.sum(i, '*') == 2 for i in range(n))
+# Constraint (7): for each location i: only 1 outgoing arc chosen
+for i in range(n):
+    m.addConstr(xvars.sum(i, "*") == 1)
 
-#
-# m.addConstr(vars.sum(0, "*") == 1)
-# vars.sum(j, "*") == 1
-# for j in range(30):
-#     m.addConstr(vars.sum(j, "*") == 1)
-#     m.addConstr(vars.sum("*", j) == 1)
-#
-#
-# m.addConstrs(vars.sum("*", j) == 1 for j in range(30))
+# Constraint (8): for each location i: #ingoing == #outgoing
+for i in range(n):
+    m.addConstr(xvars.sum("*", i) == xvars.sum(i, "*"))
 
+# Constraint (10): each location is visited within n steps
+# Already handled in upper bound of uvars, with Ui: [1,n]
 
-# Using Python looping constructs, the preceding would be...
-#
-# for i in range(n):
-#   m.addConstr(sum(vars[i,j] for j in range(n)) == 2)
+# Constraint (11): tour starts from node 0 (i = 0 --> Ui = 1)
+m.addConstr(uvars[0] == 1)
 
 
-# Optimize model
+# Update model, run optimization
+m.update()
+m.optimize()
 
-m._vars = vars
-m.Params.lazyConstraints = 1
-
-m.optimize(subtourelim)
-vals = m.getAttr('X', vars)
-selected = tuplelist((i, j) for i, j in vals.keys() if vals[i, j] > 0.5)
-
-tour = subtour(selected)
-assert len(tour) == n
-
-print('')
-print('Optimal tour: %s' % str(tour))
-print('Optimal cost: %g' % m.objVal)
-print('')
+# Obtain the selected xvars, thus the selected Xij arcs
 
 
-plot_tsp(tsp_30_locations, tour, name='exact')
-[tsp_30_locations[i] for i in tour]
-tour
+def get_arcs(xvars):
+    """
+    Returns xvars as tuples (i,j) where Xij = 1
 
-m.getConstrs()[0]
+    Parameters:
+        xvars (gurobipy.tupledict) : Selected Xij variables of the optimized model
+
+    Returns
+        arcs (list) : List of tuples (i,j) that are selected (Xij = 1)
+    """
+    arcs = []
+    for i in range(n):
+        for j in range(n):
+            if not i == j and xvars[i, j].X == 1:
+                arcs.append((i, j))
+    return sorted(arcs, key=lambda arc: arc[0])
+
+
+def get_tours(xvars, arcs):
+    """
+    Returns tours[], where each tour is a (sub)tour using the selected arcs
+    If there are no subtours, tours is a list containing a single (complete)
+    tour
+
+    Parameters:
+        xvars (gurobipy.tupledict) : Selected Xij variables of the optimized model
+        arcs (list)                : List of tuples (i,j) obtained from get_arcs
+
+    Returns:
+        tours (list) : ordered list of locations of (sub)tours
+
+    """
+    tours = []
+    visited = [False] * n
+    for i in range(n):
+        if visited[i]:
+            continue
+        j = i
+        new_tour = []
+        while not visited[j]:
+            visited[j] = True
+            new_tour.append(j)
+            j = arcs[j][1]
+        new_tour.append(new_tour[0])
+        tours.append(new_tour)
+    return tours
+
+
+# Sort arcs Xij's by i, if not already done
+arcs = get_arcs(xvars)
+tours = get_tours(xvars, arcs)
+
+
+# obtain the tours
+
+for tour in tours:
+    plot_tsp(location, tour, name='test'), plt.show()
+
+
+# Constraint (9): subtour constraints
+M = n - 1
+for i in range(n):
+    for j in range(n):
+        if not i == j and not j == 0:
+            m.addConstr(uvars[j] >= uvars[i] + 1 - M + M * xvars[i, j])
