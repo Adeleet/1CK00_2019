@@ -7,13 +7,13 @@ def plot(locations, routes, name):
     plt.scatter(*zip(*locations))
 
     for i, (u, v) in enumerate(locations):
-        ax.annotate(i, (u + 0.1, v))
+        ax.annotate(i, (u + 0.1, v), size=16)
 
     for index, route in enumerate(routes):
         cors = [locations[i] for i in route]
         x, y = zip(*cors)
         color = "#%06x" % random.randint(0,
-                                         0xFFFFFF)  # random color in hex format
+                                         0xFFFFFF)  #random color in hex format
         plt.plot(x,
                  y,
                  color,
@@ -21,12 +21,12 @@ def plot(locations, routes, name):
                  linewidth=2,
                  label='Route {}'.format(index))
 
-    # Plot a legend
+    #Plot a legend
     handles, labels = ax.get_legend_handles_labels()
-    ax.legend(handles, labels)
+    ax.legend(handles, labels, loc=2)
 
     plt.title(name)
-    plt.savefig('../figures/' + name + '.png', bbox_inches='tight')
+    plt.savefig('../figures/' + name + '.png', bbox_inches='tight', dpi=600)
     plt.show()
     return
 
