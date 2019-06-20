@@ -202,4 +202,8 @@ Optimality gap: 28.78%
 
 ### (e)
 
+![image info](./figures/4_ParameterL.png)
+
+Use
+
 ## 2 ProLogistics

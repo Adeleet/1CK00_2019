@@ -66,7 +66,7 @@ for L in [1, 10, 20, 50, 100, 150]:
     models = []
     avgs = []
     for i in range(20):
-        model4 = LateAcceptance(30, lh=L)
+        model4 = LateAcceptance(100, lh=L)
         starting_solution = model4.s[1:-1]
         shuffle(starting_solution)
         model4.s = [0] + starting_solution + [0]
@@ -79,4 +79,5 @@ for L in [1, 10, 20, 50, 100, 150]:
         avgs.append(sum([model.C for model in models]) / 20)
     ax.plot(avgs, label="".format(L))
 
-plt.show()
+plt.legend(['L=1', 'L=10', 'L=20', 'L=50', 'L=100',
+            'L=150']), plt.savefig("../figures/4_ParameterL.png", dpi=600)
