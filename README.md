@@ -204,6 +204,6 @@ Optimality gap: 28.78%
 
 ![image info](./figures/4_ParameterL.png)
 
-Use
+Use L = 1, L = 10 or  L = 20.
 
 ## 2 ProLogistics
