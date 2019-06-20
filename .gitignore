@@ -2,6 +2,7 @@
 *.log
 *.lp
 *.ini
+*.gdoc
 __pycache__
 *.pyc
 data
