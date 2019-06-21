@@ -40,7 +40,6 @@ def get_tours(visits):
 
     """
     n = len(visits)
-
     is_timespace = len(visits[0]) == 3
 
     # Timespace tour

@@ -72,7 +72,7 @@ class DifferentGraph:
     def print_results(self):
         if self.m.Status == 1:
             print("Model not yet optimized, now optimizing")
-            self.optimize(verbose=False)
+            self.optimize(verbose=True)
         print("\nObj:", self.m.objVal)
         # Sort visits Xij's by i, if not already done
         print("\nx[i,j] = 1 variables:\n\n")
@@ -91,12 +91,12 @@ class DifferentGraph:
         """
         if self.m.Status == 1:
             print("Model not yet optimized, now optimizing")
-            self.optimize(verbose=False)
+            self.optimize(verbose=True)
         plot(self.location, self.tours, name)
 
 
 class TimeSpaceNetwork:
-    def __init__(self, n, verbose=False):
+    def __init__(self, n, verbose=True):
         """
         Intializes a Time-Space Network (class 4)
 
@@ -191,7 +191,7 @@ class TimeSpaceNetwork:
         """
         if self.m.Status == 1:
             print("Model not yet optimized, now optimizing")
-            self.optimize(verbose=False)
+            self.optimize(verbose=True)
         print("\nObj:", self.m.objVal)
         # Sort visits Xij's by i, if not already done
 
@@ -208,7 +208,7 @@ class TimeSpaceNetwork:
         """
         if self.m.Status == 1:
             print("Model not yet optimized, now optimizing")
-            self.optimize(verbose=False)
+            self.optimize(verbose=True)
         plot_tsp(self.location, self.tours[0], name)
 
 
@@ -234,7 +234,7 @@ class NearestNeighbour:
             self.visits.append((self.tour[i], self.tour[i + 1]))
         self.objVal = sum([self.dist[i][j] for (i, j) in self.visits])
 
-    def optimize(self, verbose=True):
+    def optimize(self, verbose=False):
         self.tour = [self.start]
         while len(self.tour) < self.n:
             i = self.tour[-1]
@@ -250,7 +250,7 @@ class NearestNeighbour:
     def print_results(self):
         if not len(self.visits) == self.n:
             print("Model not yet optimized, now optimizing")
-            self.optimize(verbose=False)
+            self.optimize(verbose=True)
         print("\nObj:", self.objVal)
         # Sort visits Xij's by i, if not already done
 
@@ -268,27 +268,58 @@ class NearestNeighbour:
         """
         if not len(self.visits) == self.n:
             print("Model not yet optimized, now optimizing")
-            self.optimize(verbose=False)
+            self.optimize(verbose=True)
         plot(self.location, [self.tour], name)
 
 
 class LateAcceptance:
-    def __init__(self, n, lh, verbose=False):
+    def __init__(self, n, L, limit_idle=True, verbose=True,
+                 random_start=False):
         tsp_data = parse_tsp_txt(n)
         self.location = tsp_data[0]
         self.dist = tsp_data[1]
+        self.limit_idle = limit_idle
         self.n = n
-        self.lh = lh
+        self.L = L
         self.visits = []
         self.s = [i for i in range(n)]
+        if random_start:
+            self.s = self.candidate_solution()
         self.C = self.calc_obj_val(self.s)
-        self.f = [self.C] * (lh)
-
+        self.f = [self.C] * (L)
         self.I = 0
         self.I_idle = 0
 
         if verbose:
             print('NearestNeighbour Heuristic with {} cities'.format(n))
+
+    def random_start_results(
+            self,
+            rand_number,
+            L=None,
+            n=None,
+    ):
+        """
+        Runs the Late Heuristic model multiple times with random starts
+
+        Arguments:
+            L (int) :           parameter of Late Heuristic Model
+            n (int) :           tsp dataset to run on
+            rand_number (int) : number of random models (random starts)
+        Returns:
+            results (list): objective results for each random model start
+        """
+        results = []
+        if L == None:
+            L = self.L
+        if n == None:
+            n = self.n
+        for i in range(rand_number):
+            self.__init__(n, L, random_start=True, verbose=False)
+            self.optimize()
+            results.append(self.ObjVal)
+
+        return results
 
     def calc_obj_val(self, s):
         self.visits = []
@@ -305,8 +336,13 @@ class LateAcceptance:
         return [0] + new_tour + [0]
 
     def optimize(self, verbose=False):
-        while not (self.I > 10000):
-            self.step(self)
+        if self.limit_idle:
+            while not (self.I_idle > 1000):
+                self.step()
+        else:
+            while not (self.I > 10000):
+                self.step()
+        self.ObjVal = self.C
         if verbose:
             self.print_results()
 
@@ -317,7 +353,7 @@ class LateAcceptance:
             self.I_idle += 1
         if C_candidate < self.C:
             self.I_idle = 0
-        v = self.I % self.lh
+        v = self.I % self.L
         if C_candidate < self.f[v] or C_candidate <= self.C:
             self.s = s_candidate
             self.C = self.calc_obj_val(self.s)
@@ -341,5 +377,5 @@ class LateAcceptance:
         """
         if not len(self.visits) == self.n:
             print("Model not yet optimized, now optimizing")
-            self.optimize(verbose=False)
+            self.optimize(verbose=True)
         plot(self.location, [self.tour], name)
