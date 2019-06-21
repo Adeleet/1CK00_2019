@@ -9,6 +9,21 @@ from visualizer import plot, plot_tsp
 
 
 class DifferentGraph:
+    """
+    A direct Graph G(V,A) to solve a TSP problem
+
+    Arguments:
+        n (int) :                       TSP variant, n = 5, 7, 30 or 100
+
+        exclude_constraints (list) :    integers to exclude constraints:
+            (7) : For each location i, only 1 outgoing visit chosen
+            (8) : For each location i, number of ingoing == number of outgoing
+            (9) : No subtours allowed
+            (11) : A tour has to start from location 0 (depot)
+
+
+    """
+
     def __init__(self, n, exclude_constraints=[], verbose=False):
         tsp_data = parse_tsp_txt(n)
         self.location = tsp_data[0]
@@ -60,9 +75,16 @@ class DifferentGraph:
         self.update()
 
     def update(self):
+        """
+        Calls gurobi's update function to update model with variables and constraints
+        """
         self.m.update()
 
     def optimize(self, verbose=True):
+        """
+        Calls gurobi's optimize function to update model with variables and constraints
+        Calculates visits and tours and assigns these to instance
+        """
         if not verbose:
             self.m.setParam('OutputFlag', False)
         self.m.optimize()
@@ -100,12 +122,14 @@ class TimeSpaceNetwork:
         """
 		Intializes a Time-Space Network (class 4)
 
-		Attributes:
-			location (list):   (x,y) coordinates parsed from .txt file
-			dist (list):       (i,j) distance from i to j
+		Arguments:
 			n:                  number of locations
-			m:                  gurobi model used for optimization
-			xvars:              decision variables
+
+		Attributes:
+			location (list):     (x,y) coordinates parsed from .txt file
+			dist (list):         (i,j) distance from i to j
+			m (gurobipy.Model):  gurobi model used for optimization
+			xvars:               decision variables
 		"""
         tsp_data = parse_tsp_txt(n)
         self.location = tsp_data[0]
@@ -213,6 +237,14 @@ class TimeSpaceNetwork:
 
 
 class NearestNeighbour:
+    """
+    Initialize a Nearest Neighbour Heuristic
+
+    Arguments:
+        n (int) :                       TSP variant, n = 5, 7, 30 or 100
+
+    """
+
     def __init__(self, n, verbose=False, start=0):
         tsp_data = parse_tsp_txt(n)
         self.location = tsp_data[0]
@@ -224,17 +256,34 @@ class NearestNeighbour:
             print('NearestNeighbour Heuristic with {} cities'.format(self.n))
 
     def nearest_node(self, i, dj):
+        """
+        Retrieves nearest node from i to dj
+
+        Arguments:
+            i (int)     : origin or source point
+            dj (list)   : distances from i to j
+
+        Returns:
+            node (int) : index of nearest node
+        """
         options = [(j, d) for (j, d) in enumerate(dj)
                    if not i == j and j not in self.tour]
         return min(options, key=lambda option: option[1])[0]
 
     def calc_obj_val(self):
+        """
+        Returns the current objective value from its visits
+        """
         self.visits = []
         for i in self.tour[:-1]:
             self.visits.append((self.tour[i], self.tour[i + 1]))
         self.objVal = sum([self.dist[i][j] for (i, j) in self.visits])
+        return self.objVal
 
     def optimize(self, verbose=False):
+        """
+        Visit a nearest node until the tour has visited all points
+        """
         self.tour = [self.start]
         while len(self.tour) < self.n:
             i = self.tour[-1]
@@ -273,6 +322,21 @@ class NearestNeighbour:
 
 
 class LateAcceptance:
+    """
+    Late Acceptance Heuristic for TSP problems
+
+    Arguments:
+        n            (int)  : TSP variant, n = 5, 7, 30 or 100
+        L            (int)  : number of candidates to consider per step
+        limit_idle   (bool) : use limit of 1000 steps without improvements,
+                              incase limit_idle is not set, use 10,000 steps
+                              without considering if a step causes an
+                              improvement or not
+        verbose      (bool) : enable verbose logging
+        random_start (bool) : start the Heuristic with a random solution
+
+    """
+
     def __init__(self, n, L, limit_idle=True, verbose=True,
                  random_start=False):
         tsp_data = parse_tsp_txt(n)
@@ -323,6 +387,9 @@ class LateAcceptance:
         return sum([self.dist[i][j] for (i, j) in self.visits])
 
     def candidate_solution(self):
+        """
+        Generates a random candidate solution, using simple insert/remove
+        """
         new_tour = self.s[1:-1]
         r_remove = choice(new_tour)
         r_insert = choice(new_tour)
@@ -331,6 +398,9 @@ class LateAcceptance:
         return [0] + new_tour + [0]
 
     def optimize(self, verbose=False):
+        """
+        Optimizes model, with a limit of 1,000 idle steps or 10,000 steps
+        """
         if self.limit_idle:
             while not (self.I_idle > 1000):
                 self.step()
@@ -342,6 +412,13 @@ class LateAcceptance:
             self.print_results()
 
     def step(self):
+        """
+        Calculate candidate_solution according to the Late Acceptance Heuristic.
+        The idle counter is increased/reset depending on if the
+        candidate_solution is lower than the current solution.
+        Afterwards, define index v := i mod L and see if the candidate_solution
+        can be accepted if it is less than then f[v]
+        """
         s_candidate = self.candidate_solution()
         C_candidate = self.calc_obj_val(s_candidate)
         if C_candidate >= self.C:
@@ -377,9 +454,20 @@ class LateAcceptance:
 
 
 class CVRPModel:
-    def __init__(self, Q, r, K, f, dist, demand):
+    """
+    Initializes a Vehicle Routing Problem Model with Capacity constraints:
 
-        # Constants Q (vehicle capacity), r (profit/demand), f (cost/vehicle)
+    Arguments:
+        Q       (int)   : capacity constraint of vehicles
+        r       (int)   : profit per demand
+        K       (int)   : number of vehicles to use
+        f       (int)   : fixed cost of using a vehicle
+        dist    (list)  : 2D map of n * n customer, where dist[i][j] represents
+                          the distance from node i to j
+        demand  (list)  : list of demands, where d[0] = 0 (source depot)
+    """
+
+    def __init__(self, Q, r, K, f, dist, demand):
         self.m = Model()
         self.n = len(dist)
         self.K = K
@@ -472,9 +560,23 @@ class CVRPModel:
                 ]) <= self.Q)
 
     def optimize(self):
+        """
+        Calls gurobis optimize function on the linear program
+        """
         self.m.optimize()
 
-    def get_vehicle_tour(self, visits, k):
+    def get_vehicle_tour(self, k):
+        """
+        Gets the tour for a vehicle resulting from the CVRP
+
+        Arguments:
+            k (int) : number of the vehicle to get the tour for
+
+        Returns:
+            tour (list) : list of locations visited, starting and ending in
+                          location 0 (depot)
+        """
+
         visits = get_visits(self.xvars)
         vehicle_visits = [(visit[0], visit[1]) for visit in visits
                           if visit[2] == k]
@@ -488,5 +590,10 @@ class CVRPModel:
         return [0] + tour
 
     def get_tours(self):
-        visits = get_visits(self.xvars)
-        return [self.get_vehicle_tour(visits, k) for k in range(self.K)]
+        """
+        Get tours for each vehicle in the CVRP
+
+        Returns:
+            tour (list) : tour[k] := tour (list) of vehicle k
+        """
+        return [self.get_vehicle_tour(k) for k in range(self.K)]
