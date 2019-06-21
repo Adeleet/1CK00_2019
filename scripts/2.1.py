@@ -6,6 +6,7 @@ import pandas as pd
 from gurobipy import *
 
 from helper_functions import *
+from models import CVRPModel
 from visualizer import plot, plot_tsp
 
 # Coordinates (x,y) for each location
@@ -33,9 +34,7 @@ dist = [
     [31, 35, 12, 31, 79, 57, 43, 52, 12, 33, 55, 76, 0],
 ]
 
-# Constants Q (vehicle capacity), r (profit/demand), f (cost/vehicle)
 Q = 80
-n = len(dist)
 r = 4
 f = 101
 
@@ -43,109 +42,19 @@ f = 101
 K_optimals = []
 
 # Iterate through loop, initialize model
-for K in range(n):
-    m = Model()
-    m.params.TIME_LIMIT = 300
+for K in range(1, 10):
+    model = CVRPModel(Q, r, K, f, dist, demand)
+    model.optimize()
+    K_optimals.append({
+        "K": K,
+        "Obj": model.m.ObjVal,
+        "Tour": model.get_tours()
+    })
 
-    # (1) Objective Function:
+max(K_optimals, key=lambda res: res["Obj"])
+[result["Obj"] for result in K_optimals]
+K_optimals
 
-    # (1) Initialize 3-parameter binary values Xijk: vehicle k from i to j
-    xvars = tupledict()
-    for i in range(n):
-        for j in range(n):
-            if not i == j:
-                for k in range(K):
-                    xvars[i, j, k] = m.addVar(vtype=GRB.BINARY,
-                                              name=f"x[{i}][{j}][{k}]")
-
-    # (1) Initialize 2-parameter integer variabes Ujk:
-    #position of node i in the tour of vehicle k.
-    uvars = tupledict()
-    for k in range(K):
-        for j in range(n):
-            uvars[j, k] = m.addVar(vtype=GRB.INTEGER,
-                                   lb=0,
-                                   ub=n,
-                                   name=f"u[{j}][{k}]")
-
-    m.update()
-
-    # (1) Transportation costs: sum all binary Xij * Dij
-    transport_costs = sum([
-        dist[i][j] * xvars.sum(i, j, "*") for i in range(n) for j in range(n)
-    ])
-
-    # (1) Fixed fee, every vehicle costs f, so f*K is total vehicle cost
-    fixed_fee = K * f
-
-    # (1) Revenue of r per demand j for each j visited.
-    # Simply sum all variables as we will handle restrictions later on in the constraints
-    revenue = sum([demand[j] * r * xvars.sum("*", j, "*") for j in range(n)])
-
-    m.setObjective((revenue - transport_costs - fixed_fee), GRB.MAXIMIZE)
-
-    # (2) Constraint: Only visit each place once
-    for j in range(1, n):
-        m.addConstr(xvars.sum("*", j, "*") <= 1)
-
-    # (3) Constraint: Only leave each place once
-    for i in range(1, n):
-        m.addConstr(xvars.sum(i, "*", "*") <= 1)
-
-    for k in range(K):
-        # (4) Constraint: each vehicle can visit a place at most once
-        for j in range(n):
-            m.addConstr(xvars.sum("*", j, k) <= 1)
-
-        # (5) Constraint: each vehicle can leave a place at most once
-        for i in range(n):
-            m.addConstr(xvars.sum(i, "*", k) <= 1)
-
-    # (6) If vehicle k visits i, it should also leave i
-    for k in range(K):
-        for j in range(n):
-            m.addConstr(xvars.sum("*", j, k) == xvars.sum(j, "*", k))
-
-    # (7) Subtour constraints: each vehicle makes a single tour
-    M = n - 1
-    for i in range(n):
-        for j in range(1, n):
-            if not i == j:
-                m.addConstr(
-                    uvars.sum(j, "*") >= uvars.sum(i, "*") + 1 - M *
-                    (1 - xvars.sum(i, j, "*")))
-
-    # (8) Capacity constraints: each vehicle carries at most Q
-    for k in range(K):
-        m.addConstr(
-            sum([xvars.sum("*", j, k) * demand[j] for j in range(n)]) <= Q)
-
-    m.update()
-
-    m.optimize()
-
-    K_optimals.append({"Obj": m.ObjVal, "XVars": xvars})
-
-plt.figure(figsize=(15, 7)), plt.scatter(
-    [int(k) for k in K_optimals.keys()], K_optimals.values(),
-    s=100), plt.title("Optimal Value of TSP"), plt.xlabel(
-        "K number of vehicles"), plt.ylabel(
-            "Profit (revenue, transport and fixed costs)")
-
-visits = get_visits(xvars)
-
-
-def get_vehicle_tour(visits, k):
-    vehicle_visits = [(visit[0], visit[1]) for visit in visits
-                      if visit[2] == k]
-    tour = []
-    key = 0
-    while len(vehicle_visits) > 0:
-        visit = [arc for arc in vehicle_visits if arc[0] == key][0]
-        key = visit[1]
-        tour.append(visit[1])
-        vehicle_visits.remove(visit)
-    return [0] + tour
-
-
-plot(location, [get_vehicle_tour(visits, k) for k in range(K)], "2.a VRP")
+plt.figure(), plt.scatter(x, y), plt.title(
+    "VRP - Vehicle Scaling"), plt.xlabel("K number of vehicles"), plt.ylabel(
+        "Profit (revenue, transport and fixed costs)")

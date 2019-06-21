@@ -16,14 +16,14 @@ class DifferentGraph:
         self.m = Model()
         self.n = n
         if verbose:
-            print('Different Graph model with {} cities'.format(n))
+            print('Different Graph model with {} cities'.format(self.n))
             if len(exclude_constraints) > 0:
                 print("Excluded constraints: {}".format(exclude_constraints))
 
         # Define x variables: xvars[i,j] := visit selected that travels from i to j
         self.xvars = tupledict()
-        for i in range(n):
-            for j in range(n):
+        for i in range(self.n):
+            for j in range(self.n):
                 if not i == j:
                     self.xvars[i, j] = self.m.addVar(obj=self.dist[i][j],
                                                      vtype=GRB.BINARY,
@@ -32,23 +32,23 @@ class DifferentGraph:
         # Define u variables: uvars[i] := position of node i in tour
         self.uvars = [
             self.m.addVar(lb=1, ub=n, vtype=GRB.INTEGER, name='u[%d]' % i)
-            for i in range(n)
+            for i in range(self.n)
         ]
 
         if not 7 in exclude_constraints:
             # (7) Constraint (7): for each location i: only 1 outgoing visit chosen
-            for i in range(n):
+            for i in range(self.n):
                 self.m.addConstr(self.xvars.sum(i, "*") == 1)
         if not 8 in exclude_constraints:
             # Constraint (8): for each location i: #ingoing == #outgoing
-            for i in range(n):
+            for i in range(self.n):
                 self.m.addConstr(
                     self.xvars.sum("*", i) == self.xvars.sum(i, "*"))
         if not 9 in exclude_constraints:
             # Constraint (9): subtour constraints
             M = n - 1
-            for i in range(n):
-                for j in range(n):
+            for i in range(self.n):
+                for j in range(self.n):
                     if not i == j and not j == 0:
                         self.m.addConstr(self.uvars[j] >= self.uvars[i] + 1 -
                                          M + M * self.xvars[i, j])
@@ -87,8 +87,8 @@ class DifferentGraph:
 
     def plot(self, name):
         """
-        Plots results, optimizes model first if not done yet
-        """
+		Plots results, optimizes model first if not done yet
+		"""
         if self.m.Status == 1:
             print("Model not yet optimized, now optimizing")
             self.optimize(verbose=True)
@@ -98,15 +98,15 @@ class DifferentGraph:
 class TimeSpaceNetwork:
     def __init__(self, n, verbose=True):
         """
-        Intializes a Time-Space Network (class 4)
+		Intializes a Time-Space Network (class 4)
 
-        Attributes:
-            location (list):   (x,y) coordinates parsed from .txt file
-            dist (list):       (i,j) distance from i to j
-            n:                  number of locations
-            m:                  gurobi model used for optimization
-            xvars:              decision variables
-        """
+		Attributes:
+			location (list):   (x,y) coordinates parsed from .txt file
+			dist (list):       (i,j) distance from i to j
+			n:                  number of locations
+			m:                  gurobi model used for optimization
+			xvars:              decision variables
+		"""
         tsp_data = parse_tsp_txt(n)
         self.location = tsp_data[0]
         self.dist = tsp_data[1]
@@ -115,7 +115,7 @@ class TimeSpaceNetwork:
         self.xvars = tupledict()
 
         if verbose:
-            print('Time Space Network model with {} cities'.format(n))
+            print('Time Space Network model with {} cities'.format(self.n))
 
         # (1) Define X0,j,0 variables: start from node 0
         for j in range(1, n):
@@ -145,7 +145,7 @@ class TimeSpaceNetwork:
         self.m.addConstr((self.xvars.sum(0, '*', 0) == 1), "x[0,j]=1")
 
         # (3) Constraint: Ingoing Xji = Outgoing Xij
-        for i in range(n):
+        for i in range(self.n):
             for t in range(n - 1):
                 xji = self.xvars.sum("*", i, t)
                 xij = self.xvars.sum(i, "*", t + 1)
@@ -160,14 +160,14 @@ class TimeSpaceNetwork:
 
     def update(self):
         """
-        Calls gurobi's update function
-        """
+		Calls gurobi's update function
+		"""
         self.m.update()
 
     def optimize(self, verbose=True):
         """
-        Calls gurobi's optimize function, and calculates visits and tours
-        """
+		Calls gurobi's optimize function, and calculates visits and tours
+		"""
         if not verbose:
             self.m.setParam('OutputFlag', False)
         self.m.optimize()
@@ -176,19 +176,19 @@ class TimeSpaceNetwork:
 
     def save(self, filename):
         """
-        Saves model as file to /models/{filename}
-        """
+		Saves model as file to /models/{filename}
+		"""
         self.m.write(filename)
 
     def print_results(self):
         """
-        Prints results, optimizes model first if not done yet
+		Prints results, optimizes model first if not done yet
 
-        Results consist of:
-            Obj:        Objective Value after optimization
-            x[i,j,t] :  selected variables in solution where x[i,j,t] = 1
-            Tours(s) :  selected tours in solution
-        """
+		Results consist of:
+			Obj:        Objective Value after optimization
+			x[i,j,t] :  selected variables in solution where x[i,j,t] = 1
+			Tours(s) :  selected tours in solution
+		"""
         if self.m.Status == 1:
             print("Model not yet optimized, now optimizing")
             self.optimize(verbose=True)
@@ -204,8 +204,8 @@ class TimeSpaceNetwork:
 
     def plot(self, name):
         """
-        Plots results, optimizes model first if not done yet
-        """
+		Plots results, optimizes model first if not done yet
+		"""
         if self.m.Status == 1:
             print("Model not yet optimized, now optimizing")
             self.optimize(verbose=True)
@@ -221,7 +221,7 @@ class NearestNeighbour:
         self.n = n
 
         if verbose:
-            print('NearestNeighbour Heuristic with {} cities'.format(n))
+            print('NearestNeighbour Heuristic with {} cities'.format(self.n))
 
     def nearest_node(self, i, dj):
         options = [(j, d) for (j, d) in enumerate(dj)
@@ -264,8 +264,8 @@ class NearestNeighbour:
 
     def plot(self, name):
         """
-        Plots results, optimizes model first if not done yet
-        """
+		Plots results, optimizes model first if not done yet
+		"""
         if not len(self.visits) == self.n:
             print("Model not yet optimized, now optimizing")
             self.optimize(verbose=True)
@@ -282,7 +282,7 @@ class LateAcceptance:
         self.n = n
         self.L = L
         self.visits = []
-        self.s = [i for i in range(n)]
+        self.s = [i for i in range(self.n)]
         if random_start:
             self.s = self.candidate_solution()
         self.C = self.calc_obj_val(self.s)
@@ -291,24 +291,19 @@ class LateAcceptance:
         self.I_idle = 0
 
         if verbose:
-            print('NearestNeighbour Heuristic with {} cities'.format(n))
+            print('NearestNeighbour Heuristic with {} cities'.format(self.n))
 
-    def random_start_results(
-            self,
-            rand_number,
-            L=None,
-            n=None,
-    ):
+    def random_start_results(self, rand_number, L=None, n=None):
         """
-        Runs the Late Heuristic model multiple times with random starts
+		Runs the Late Heuristic model multiple times with random starts
 
-        Arguments:
-            L (int) :           parameter of Late Heuristic Model
-            n (int) :           tsp dataset to run on
-            rand_number (int) : number of random models (random starts)
-        Returns:
-            results (list): objective results for each random model start
-        """
+		Arguments:
+			L (int) :           parameter of Late Heuristic Model
+			n (int) :           tsp dataset to run on
+			rand_number (int) : number of random models (random starts)
+		Returns:
+			results (list): objective results for each random model start
+		"""
         results = []
         if L == None:
             L = self.L
@@ -373,9 +368,125 @@ class LateAcceptance:
 
     def plot(self, name):
         """
-        Plots results, optimizes model first if not done yet
-        """
+		Plots results, optimizes model first if not done yet
+		"""
         if not len(self.visits) == self.n:
             print("Model not yet optimized, now optimizing")
             self.optimize(verbose=True)
         plot(self.location, [self.tour], name)
+
+
+class CVRPModel:
+    def __init__(self, Q, r, K, f, dist, demand):
+
+        # Constants Q (vehicle capacity), r (profit/demand), f (cost/vehicle)
+        self.m = Model()
+        self.n = len(dist)
+        self.K = K
+        self.dist = dist
+        self.demand = demand
+        self.Q = Q
+        self.r = r
+
+        # (1) Objective Function:
+
+        # (1) Initialize 3-parameter binary values Xijk: vehicle k from i to j
+        self.xvars = tupledict()
+        for i in range(self.n):
+            for j in range(self.n):
+                if not i == j:
+                    for k in range(self.K):
+                        self.xvars[i, j, k] = self.m.addVar(
+                            vtype=GRB.BINARY, name=f"x[{i}][{j}][{k}]")
+
+        # (1) Initialize 2-parameter integer variabes Ujk:
+        #position of node i in the tour of vehicle k.
+        self.uvars = tupledict()
+
+        for k in range(self.K):
+            for j in range(self.n):
+                self.uvars[j, k] = self.m.addVar(vtype=GRB.INTEGER,
+                                                 lb=0,
+                                                 ub=self.n,
+                                                 name=f"u[{j}][{k}]")
+        self.m.update()
+
+        # (1) Transportation costs: sum all binary Xij * Dij
+        self.transport_costs = sum([
+            self.dist[i][j] * self.xvars.sum(i, j, "*") for i in range(self.n)
+            for j in range(self.n)
+        ])
+
+        # (1) Fixed fee, every vehicle costs f, so f*K is total vehicle cost
+        self.fixed_costs = K * f
+
+        # (1) Revenue of r per demand j for each j visited.
+        # Simply sum all variables as we will handle restrictions later on in the constraints
+        self.revenue = sum([
+            self.demand[j] * self.r * self.xvars.sum("*", j, "*")
+            for j in range(self.n)
+        ])
+
+        self.m.setObjective(
+            (self.revenue - self.transport_costs - self.fixed_costs),
+            GRB.MAXIMIZE)
+
+        # (2) Constraint: Only visit each place once
+        for j in range(1, self.n):
+            self.m.addConstr(self.xvars.sum("*", j, "*") <= 1)
+
+        # (3) Constraint: Only leave each place once
+        for i in range(1, self.n):
+            self.m.addConstr(self.xvars.sum(i, "*", "*") <= 1)
+
+        for k in range(K):
+            # (4) Constraint: each vehicle can visit a place at most once
+            for j in range(self.n):
+                self.m.addConstr(self.xvars.sum("*", j, self.K) <= 1)
+
+            # (5) Constraint: each vehicle can leave a place at most once
+            for i in range(self.n):
+                self.m.addConstr(self.xvars.sum(i, "*", self.K) <= 1)
+
+        # (6) If vehicle k visits i, it should also leave i
+        for k in range(K):
+            for j in range(self.n):
+                self.m.addConstr(
+                    self.xvars.sum("*", j, k) == self.xvars.sum(j, "*", k))
+
+        # (7) Subtour constraints: each vehicle makes a single tour
+        M = self.n - 1
+        for i in range(self.n):
+            for j in range(1, self.n):
+                if not i == j:
+                    self.m.addConstr(
+                        self.uvars.sum(j, "*") >= self.uvars.sum(i, "*") + 1 -
+                        M * (1 - self.xvars.sum(i, j, "*")))
+
+        # (8) Capacity constraints: each vehicle carries at most Q
+        for k in range(K):
+            self.m.addConstr(
+                sum([
+                    self.xvars.sum("*", j, k) * self.demand[j]
+                    for j in range(self.n)
+                ]) <= self.Q)
+
+    def optimize(self):
+        self.m.optimize()
+
+    def get_vehicle_tour(self, visits, k):
+        visits = get_visits(self.xvars)
+        vehicle_visits = [(visit[0], visit[1]) for visit in visits
+                          if visit[2] == k]
+        tour = []
+        key = 0
+        while len(vehicle_visits) > 0:
+            visit = [arc for arc in vehicle_visits if arc[0] == key][0]
+            key = visit[1]
+            tour.append(visit[1])
+            vehicle_visits.remove(visit)
+        return [0] + tour
+
+    def get_tours(self):
+        visits = get_visits(self.xvars)
+        return [self.get_vehicle_tour(visits, k) for k in range(self.K)]
