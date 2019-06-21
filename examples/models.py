@@ -559,11 +559,18 @@ class CVRPModel:
                     for j in range(self.n)
                 ]) <= self.Q)
 
+        # (9) Each vehicle leaves the depot
+        for k in range(K):
+            self.m.addConstr(self.xvars.sum(0, "*", k) == 1)
+
     def optimize(self):
         """
-        Calls gurobis optimize function on the linear program
+        Calls gurobi's optimize function on the linear program and updates
+        the .ObjVal of the instance .ObjVal to the result
+
         """
         self.m.optimize()
+        self.ObjVal = self.m.ObjVal
 
     def get_vehicle_tour(self, k):
         """
@@ -594,6 +601,7 @@ class CVRPModel:
         Get tours for each vehicle in the CVRP
 
         Returns:
-            tour (list) : tour[k] := tour (list) of vehicle k
+            tour (list) : all complete tours, tour[k] is the tour (list) of
+                          vehicle k
         """
         return [self.get_vehicle_tour(k) for k in range(self.K)]

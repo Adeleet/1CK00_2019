@@ -51,11 +51,13 @@ for K in range(1, 10):
         "Tour": model.get_tours()
     })
 
+[result["Tour"] for result in K_optimals]
+
 x = [r["K"] for r in K_optimals]
 y = [r["Obj"] for r in K_optimals]
 
-plt.figure(), plt.bar(x, y), plt.title("VRP - Vehicle Scaling"), plt.xlabel(
-    "K number of vehicles"), plt.ylabel(
+plt.figure(dpi=150), plt.bar(x, y), plt.title(
+    "VRP - Vehicle Scaling"), plt.xlabel("K number of vehicles"), plt.ylabel(
         "Profit (revenue, transport and fixed costs)")
 
 # Get best result for all K's
