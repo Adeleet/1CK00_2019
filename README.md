@@ -8,7 +8,7 @@ Obj: 496
 
 #### (b)
 
-![image info](./figures/1_TimeSpaceNetwork.png)
+![image info](./output/figures/1_TimeSpaceNetwork.png)
 
 #### (c)
 
@@ -20,7 +20,7 @@ Optimality gap: 11.21%
 
 ### (a)
 
-![image info](./figures/2_DifferentGraph.png)
+![image info](./output/figures/2_DifferentGraph.png)
 
 Obj: 206.0
 
@@ -49,7 +49,7 @@ Tour(s)
 
 ### (b)
 
-![image info](./figures/2_DifferentGraph_without_subtours.png)
+![image info](./output/figures/2_DifferentGraph_without_subtours.png)
 
 Obj: 257.0
 
@@ -99,7 +99,7 @@ Tour
 
 ### (b)
 
-![image info](./figures/3_NearestNeighbour.png)
+![image info](./output/figures/3_NearestNeighbour.png)
 
 **Looks similar to optimal solution, and Obj (507) is close to optimal (496)**
 
@@ -133,8 +133,8 @@ Obj: 556
 Tour
 [0, 4, 9, 14, 12, 7, 1, 13, 8, 24, 17, 23, 28, 20, 2, 16, 21, 3, 5, 18, 22, 6, 10, 15, 25, 27, 19, 26, 11, 0]
 Optimality gap: 10.79%
-![image info](./figures/4_LateAcceptance.png)
-![image info](./figures/4_NearestNeighbour.png)
+![image info](./output/figures/4_LateAcceptance.png)
+![image info](./output/figures/4_NearestNeighbour.png)
 
 ### (b)
 
@@ -168,7 +168,7 @@ Optimality gap: 28.78%
 
 ### (e)
 
-![image info](./figures/4_ParameterL.png)
+![image info](./output/figures/4_ParameterL.png)
 
 Use L = 1, L = 10 or  L = 20.
 
