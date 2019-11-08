@@ -1,13 +1,19 @@
+import sys
+sys.path.append("..")
+sys.path.append("../lib")
 from random import choice
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from gurobipy import *
 
+import visualizer
+from gurobipy import *
 from helper_functions import *
 from models import CVRPModel
 from visualizer import plot, plot_tsp
+
+
 
 # Coordinates (x,y) for each location
 location = [(50, 50), (49, 31), (26, 60), (23, 20), (96, 31), (64, 85),

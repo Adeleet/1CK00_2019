@@ -1,13 +1,20 @@
+import sys
+sys.path.append("..")
+sys.path.append("../lib")
+
 from random import shuffle
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from gurobipy import *
 
+from gurobipy import *
 from helper_functions import *
 from models import DifferentGraph, LateAcceptance, NearestNeighbour
 from visualizer import plot, plot_tsp
+
+
+
 
 model4_LA = LateAcceptance(30, L=50)
 model4_NN = NearestNeighbour(n=30)
@@ -66,5 +73,5 @@ for L in enumerate([1, 10, 20, 50, 100, 300]):
     ax.plot(avgs, label="{}".format(L))
 
 plt.legend(['L=1', 'L=10', 'L=20', 'L=50', 'L=100', 'L=300']), plt.savefig(
-    "../figures/4_ParameterL.png",
+    "output/figures/4_ParameterL.png",
     dpi=300), plt.xlabel("iteration"), plt.ylabel("Mean Obj. Value")

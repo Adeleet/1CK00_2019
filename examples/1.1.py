@@ -1,11 +1,15 @@
+import sys
+
 import matplotlib.pyplot as plt
+
+sys.path.append("..")  # add models folder
 
 from models import TimeSpaceNetwork
 
 model1 = TimeSpaceNetwork(30)
 model1.optimize(verbose=False)
 # model1.print_results()
-model1.save('1_TimeSpaceNetwork.lp')
+model1.save('/output/models/1_TimeSpaceNetwork.lp')
 
 model1.plot("1_TimeSpaceNetwork")
 

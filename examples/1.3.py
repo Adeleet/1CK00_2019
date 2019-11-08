@@ -1,6 +1,12 @@
+import sys
+sys.path.append("..")
+sys.path.append("../lib")
 from helper_functions import parse_tsp_txt
-from models import NearestNeighbour
 from visualizer import plot, plot_tsp
+
+
+from models import NearestNeighbour
+
 
 model3 = NearestNeighbour(30)
 model3.optimize(verbose=False)

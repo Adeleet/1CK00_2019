@@ -1,4 +1,10 @@
+import sys
+
+sys.path.append("..")
+
 from models import DifferentGraph
+
+
 
 model2 = DifferentGraph(7, exclude_constraints=[9])
 model2.optimize(verbose=False)

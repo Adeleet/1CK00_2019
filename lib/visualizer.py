@@ -13,7 +13,7 @@ def plot(locations, routes, name):
         cors = [locations[i] for i in route]
         x, y = zip(*cors)
         color = "#%06x" % random.randint(0,
-                                         0xFFFFFF)  #random color in hex format
+                                         0xFFFFFF)  # random color in hex format
         plt.plot(x,
                  y,
                  color,
@@ -21,12 +21,13 @@ def plot(locations, routes, name):
                  linewidth=2,
                  label='Route {}'.format(index))
 
-    #Plot a legend
+    # Plot a legend
     handles, labels = ax.get_legend_handles_labels()
     ax.legend(handles, labels, loc=2)
 
     plt.title(name)
-    plt.savefig('../figures/' + name + '.png', bbox_inches='tight', dpi=600)
+    plt.savefig('output/figures/' + name + '.png',
+                bbox_inches='tight', dpi=600)
     plt.show()
     return
 
